@@ -4,8 +4,10 @@ import os
 from ndu_gate_camera import NDUCameraService
 from ndu_gate_camera.camera.ndu_logger import NDULoggerHandler
 from ndu_gate_camera.camera.result_handlers.result_handler_file import ResultHandlerFile
+from ndu_gate_camera.camera.result_handlers.result_handler_mqtt import ResultHandlerMqtt
 from ndu_gate_camera.camera.result_handlers.result_handler_socket import ResultHandlerSocket
 from ndu_gate_camera.utility.constants import DEFAULT_HANDLER_SETTINGS
+from ndu_gate_camera.utility import onnx_helper
 from yaml import safe_load
 
 from service_manager.services.service_wrapper import ServiceState, ServiceWrapper
@@ -47,26 +49,37 @@ class NDUGateCameraServiceWrapper(ServiceWrapper):
         log.info("NDU-Gate-Camera logging config file: %s", logging_config_file)
         log.info("NDU-Gate-Camera logging service level: %s", log.level)
 
+        onnx_helper.init(self.ndu_gate_config.get("onnx_runner", None), log)
+        extension_folder = self.ndu_gate_config.get("extension_folder", None)
         result_hand_conf = self.ndu_gate_config.get("result_handler", None)
         if result_hand_conf is None:
             result_hand_conf = DEFAULT_HANDLER_SETTINGS
 
-        if str(result_hand_conf.get("type", "SOCKET")) == str("SOCKET"):
+        res_handler = result_hand_conf.get("type")
+        if str(res_handler) == str("SOCKET"):
             result_handler = ResultHandlerSocket(result_hand_conf.get("socket", {}),
                                                  result_hand_conf.get("device", None))
+        elif res_handler == str("MQTT"):
+            result_handler = ResultHandlerMqtt(result_hand_conf.get("access_token"), result_hand_conf.get("mqtt"))
+        elif str(res_handler) == str("FILE"):
+            result_handler = ResultHandlerFile(result_hand_conf.get("file_path", None))
         else:
             result_handler = ResultHandlerFile(result_hand_conf.get("file_path", None))
 
-        if self.ndu_gate_config.get("instances", None) is not None:
-            # TODO - tek instance varsa
-            for instance in self.ndu_gate_config.get("instances", []):
+        instances = self.ndu_gate_config.get("instances", None)
+        if instances is not None:
+            for instance in instances:
+                if instance["source"].get("ignore", True):
+                    continue
                 # TODO - subprocess
                 camera_service = NDUCameraService(instance=instance, config_dir=ndu_gate_config_dir,
-                                                  handler=result_handler, is_main_thread=False)
+                                                  handler=result_handler, is_main_thread=False,
+                                                  extension_folder=extension_folder)
                 camera_service.start()
                 self.instances.append(camera_service)
                 log.info("NDU-Gate-Camera an instance started")
             log.info("NDU-Gate-Camera all instances are started")
+
         else:
             log.error("NDUCameraService no source found!")
 

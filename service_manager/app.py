@@ -10,7 +10,6 @@ from tendo.singleton import SingleInstanceException
 
 from service_manager.services.ndu_gate_camera_service_wrapper import NDUGateCameraServiceWrapper
 from service_manager.services.service_wrapper import ServiceState
-from service_manager.services.ndu_gateway_service_wrapper import NDUGatewayServiceWrapper
 from service_manager.utils.cache_helper import check_temp_folder, create_service_files, set_service_setting, \
     get_service_setting
 
@@ -27,11 +26,6 @@ class NDUGateTrayApplication(QtWidgets.QSystemTrayIcon):
                 'service': NDUGateCameraServiceWrapper(get_service_setting('ndu-gate-camera', CONFIG_FILE_KEY)),
                 'name': 'NDU-Gate Camera Service',
                 'icon': 'ndu_gate_icon.png'
-            },
-            'ndu-gateway': {
-                'service': NDUGatewayServiceWrapper(get_service_setting('ndu-gateway', CONFIG_FILE_KEY)),
-                'name': 'NDU - Thingsboard Gateway Service',
-                'icon': 'tb_gate_icon.png'
             }
         }
 
