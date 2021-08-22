@@ -5,6 +5,9 @@ from os import path
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFileDialog
+import os
+os.environ['PBR_VERSION'] = "4.0.2"
+import tendo
 from tendo import singleton
 from tendo.singleton import SingleInstanceException
 
